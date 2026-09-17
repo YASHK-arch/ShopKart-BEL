@@ -2,8 +2,8 @@
 
 # ShopKart: Customer Authentication Service
 
-**Duration:** 2 Hours  
-**Mode:** Individual Lab  
+**Duration:** 2 Hours
+**Mode:** Individual Lab
 **Total Marks:** 100
 
 ---
@@ -94,13 +94,13 @@ backend/
 
 Create a **Customer** collection.
 
-| Field | Type | Validation |
-|--------|------|------------|
-| fullName | String | Required |
-| email | String | Required, Unique |
-| password | String | Required |
-| phone | String | Required |
-| createdAt | Date | Automatic |
+| Field     | Type   | Validation       |
+| --------- | ------ | ---------------- |
+| fullName  | String | Required         |
+| email     | String | Required, Unique |
+| password  | String | Required         |
+| phone     | String | Required         |
+| createdAt | Date   | Automatic        |
 
 > **Important:** The password stored inside MongoDB must always be a **bcrypt hash**.
 
@@ -154,11 +154,11 @@ POST /customers/register
 
 ### Failure Cases
 
-| Situation | Status Code |
-|-----------|-------------|
-| Missing field | 400 |
-| Email already exists | 409 |
-| Password too short | 400 |
+| Situation            | Status Code |
+| -------------------- | ----------- |
+| Missing field        | 400         |
+| Email already exists | 409         |
+| Password too short   | 400         |
 
 ---
 
@@ -200,9 +200,9 @@ POST /customers/login
 
 ### Failure Cases
 
-| Case | Status Code |
-|------|-------------|
-| Invalid credentials | 401 |
+| Case                | Status Code |
+| ------------------- | ----------- |
+| Invalid credentials | 401         |
 
 > Do **not** reveal whether the email or password was incorrect.
 
@@ -273,12 +273,12 @@ POST /customers/logout
 
 # API Summary
 
-| Method | Endpoint | Protected |
-|--------|----------|-----------|
-| POST | `/customers/register` | ❌ |
-| POST | `/customers/login` | ❌ |
-| GET | `/customers/me` | ✅ |
-| POST | `/customers/logout` | ✅ |
+| Method | Endpoint                | Protected |
+| ------ | ----------------------- | --------- |
+| POST   | `/customers/register` | ❌        |
+| POST   | `/customers/login`    | ❌        |
+| GET    | `/customers/me`       | ✅        |
+| POST   | `/customers/logout`   | ✅        |
 
 ---
 
@@ -300,16 +300,16 @@ A student passes the lab only if **all** of the following work correctly:
 
 # TA Evaluation Rubric (100 Marks)
 
-| Category | Marks |
-|----------|------:|
-| Register API | 15 |
-| Login API | 15 |
-| JWT + Cookie Authentication | 20 |
-| Protected Profile Route | 20 |
-| MVC Code Structure | 10 |
-| Error Handling | 10 |
-| Viva | 10 |
-| **Total** | **100** |
+| Category                    |         Marks |
+| --------------------------- | ------------: |
+| Register API                |            15 |
+| Login API                   |            15 |
+| JWT + Cookie Authentication |            20 |
+| Protected Profile Route     |            20 |
+| MVC Code Structure          |            10 |
+| Error Handling              |            10 |
+| Viva                        |            10 |
+| **Total**             | **100** |
 
 ---
 

@@ -7,11 +7,12 @@ const {
   logoutCustomer,
   changePassword
 } = require('../controllers/customer.controller');
+
 const { protect } = require('../middlewares/auth.middleware');
 
 router.post('/register', registerCustomer);
 router.post('/login', loginCustomer);
-router.post('/logout', protect, logoutCustomer);
+router.post('/logout', logoutCustomer);
 router.get('/me', protect, getMyProfile);
 router.patch('/change-password', protect, changePassword);
 
