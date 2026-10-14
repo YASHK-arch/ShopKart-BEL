@@ -31,6 +31,7 @@ const Login = () => {
     try {
       setLoading(true);
       await loginCustomer(formData);
+      window.dispatchEvent(new CustomEvent('user-logged-in'));
       navigate('/home');
     } catch {
       setError('Invalid Credentials');

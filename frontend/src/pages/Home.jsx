@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { getCustomerProfile } from '../services/api';
 import Navbar from '../components/Navbar';
 
@@ -13,6 +13,7 @@ const Home = () => {
       try {
         const data = await getCustomerProfile();
         setUser(data.customer || data);
+        window.dispatchEvent(new CustomEvent('user-logged-in'));
       } catch {
         navigate('/login', { replace: true });
       } finally {
@@ -50,6 +51,12 @@ const Home = () => {
             <p className="mt-2 text-blue-100 text-sm sm:text-base">
               Manage your ShopKart account here.
             </p>
+            <Link
+              to="/products"
+              className="mt-6 inline-flex items-center bg-white text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-md text-sm font-medium"
+            >
+              Browse products
+            </Link>
           </div>
 
           <div className="px-6 py-6 sm:px-10 border-t border-gray-200">
