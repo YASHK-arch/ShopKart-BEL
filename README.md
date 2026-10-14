@@ -1,21 +1,80 @@
-# ShopKart-BEL
+# ShopKart — Checkout and Orders
 
-npm install express mongodb mongoose bcrypt jsonwebtoken cookie-parser dotenv nodemon
+This service handles checkout and order-related functionality for ShopKart.
 
+## Before you begin
 
-Lab-06 implemented. Frontend build passes (vite build) and backend modules load.
-Backend (new):
+Inspect the package/build manifest in the repository root first (for example, `package.json`, `pom.xml`, `build.gradle`, or `requirements.txt`). Install the matching runtime and package manager before installing dependencies.
 
-- models/order.model.js — Order with user ref, snapshot items (name/price/image), shipping address, total, payment/status enums, Razorpay ids.
-- config/razorpay.js — client built only when keys exist (server still boots without them).
-- controllers/order.controller.js — createPaymentOrder (validates address, reloads cart/products, recalculates total server-side, creates pending order + Razorpay order in paise), verifyPayment (HMAC-SHA256 against stored razorpayOrderId, marks PAID/PLACED, clears cart), getOrders, getOrderById (owner-only 404), updateOrderStatus (bonus).
-- routes/order.routes.js — all protected; registered in index.js at /orders.
-- .env / .env.example — added RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET.
-  Frontend (new):
-- pages/Checkout.jsx (form state + validation, script loader, Razorpay Checkout, verify → clearCart() → success), OrderSuccess.jsx, Orders.jsx, OrderDetails.jsx.
-- components/CheckoutForm.jsx, OrderSummary.jsx, OrderCard.jsx, utils/orderFormat.js.
-  Frontend (modified): services/api.js (order endpoints), CartContext.jsx (clearCart, initialized), App.jsx (routes /checkout, /order-success/:id, /orders, /orders/:id), Cart.jsx (checkout button links), Navbar.jsx (My Orders).
-  Two things to note:
+## Setup
 
-1. Add your real Test Mode keys to backend/.env (placeholders currently set) and restart the server. .env is already gitignored.
-2. Stock decision: this repo's cart reserves stock on add-to-cart (decrements product.stock), so checkout validates the reservation is still fulfillable (stock < 0 → reject) and the order does not decrement again. If you'd rather stock be decremented only at order time (the other common model), the cart controller would need adjusting — tell me and I'll switch it.
+1. Clone the repository:
+
+   ```bash
+   git clone <repository-url>
+   cd "ShopKart-BEL - Checkout and orders"
+   ```
+
+2. Install dependencies using the package manager declared by the project. Typical examples:
+
+   ```bash
+   npm ci              # Node.js projects with package-lock.json
+   pnpm install --frozen-lockfile
+   yarn install --immutable
+   ```
+
+   Use only the command that matches the committed manifest/lockfile; do not create a new lockfile just to start the project.
+
+3. Create your local environment file from the committed example, if one is provided:
+
+   ```bash
+   # macOS / Linux
+   cp .env.example .env
+
+   # PowerShell
+   Copy-Item .env.example .env
+   ```
+
+4. Populate `.env` only with values for your local environment. Never commit this file.
+
+5. Start the application using the repository’s development command.
+
+## Environment and secret safety
+
+Do not commit API keys, credentials, tokens, private certificates, or local `.env` files. The repository’s `.gitignore` should exclude `.env` and its local variants while allowing an intentionally non-sensitive `.env.example` template.
+
+Before committing or pushing, run:
+
+```bash
+git status
+git diff --cached
+```
+
+In PowerShell, check for accidentally tracked environment files and private-key material with:
+
+```powershell
+git ls-files | Select-String -Pattern '(^|/)(\.env($|\.)|.*\.(pem|key|p12|pfx)$)'
+```
+
+If a secret was accidentally staged, remove it from the index without deleting your local copy:
+
+```bash
+git restore --staged <file>
+```
+
+If it was already committed or pushed, rotate the credential immediately, remove it from Git history, and notify anyone with access to the repository.
+
+## Useful commands
+
+Use the package scripts or build files committed in this repository for the following actions:
+
+- Development server
+- Production build
+- Test suite
+- Linting / formatting
+
+For a Node.js service, these are commonly exposed as `npm run dev`, `npm test`, `npm run lint`, and `npm run build`; use the actual scripts declared in `package.json`. Keep this README updated when the setup flow changes.
+
+## Contributing
+
+Keep changes focused, run the relevant checks before opening a pull request, and never include secrets in source code, logs, screenshots, test fixtures, or documentation.
