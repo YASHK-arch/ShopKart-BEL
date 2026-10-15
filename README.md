@@ -493,6 +493,8 @@ JWT_SECRET=your_jwt_secret
 NODE_ENV=development
 RAZORPAY_KEY_ID=your_test_key_id
 RAZORPAY_KEY_SECRET=your_test_key_secret
+# Production: comma-separated exact frontend origins, e.g. https://shopkart.vercel.app
+CORS_ORIGINS=http://localhost:5173
 ```
 
 ### Install dependencies
@@ -516,6 +518,13 @@ npm run dev
 ```
 
 The backend runs on `http://localhost:3000` and the frontend runs on `http://localhost:5173` by default.
+
+### Production deployment notes
+
+- Set `CORS_ORIGINS` on the backend to the exact deployed frontend origin (scheme and host, no trailing path). Multiple origins can be comma-separated. Localhost origins are allowed automatically when `NODE_ENV` is not `production`.
+- Set `VITE_API_URL` in the frontend host to the deployed backend URL, for example `https://shopkart-bel.onrender.com`.
+- In production, the authentication cookie uses `SameSite=None; Secure` for cross-origin frontend/API requests. Locally it uses `SameSite=Lax` without requiring HTTPS. Login and logout share the same cookie attributes.
+- Use HTTPS for both deployed sites. Some browsers restrict third-party cookies across unrelated hosting domains; custom frontend and API subdomains under the same parent domain are more reliable if the browser blocks the cookie.
 
 ---
 

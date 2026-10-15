@@ -1,6 +1,7 @@
 const Customer = require('../models/customer.model');
 const bcrypt = require('bcrypt');
 const generateToken = require('../utils/generateToken');
+const authCookieOptions = require('../utils/authCookieOptions');
 
 // @desc    Register a new customer
 // @route   POST /customers/register
@@ -96,12 +97,7 @@ const getMyProfile = async (req, res) => {
 // @access  Public
 const logoutCustomer = async (req, res) => {
   try {
-    res.clearCookie('token', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      path: '/',
-    });
+    res.clearCookie('token', authCookieOptions);
 
     res.status(200).json({ success: true, message: 'Logged out successfully' });
   } catch (error) {
