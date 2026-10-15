@@ -131,7 +131,7 @@ const verifyPayment = async (req, res) => {
   try {
     const { shopKartOrderId, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
 
-    if (!shopKartOrderId || !razorpay_payment_id || !razorpay_signature) {
+    if (!shopKartOrderId || !razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
       return res.status(400).json({ success: false, message: 'Missing payment details' });
     }
 
@@ -146,6 +146,15 @@ const verifyPayment = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Order not found' });
     }
 
+    if (order.razorpayOrderId !== razorpay_order_id) {
+      return res.status(400).json({ success: false, message: 'Payment order does not match' });
+    }
+
+    const alreadyPaid = order.paymentStatus === 'PAID';
+    if (!alreadyPaid && (order.paymentStatus !== 'PENDING' || order.status !== 'PENDING_PAYMENT')) {
+      return res.status(409).json({ success: false, message: 'Order is not awaiting payment' });
+    }
+
     // Use the Razorpay order id stored in our database as the trusted value,
     // never the id supplied by the browser.
     const body = `${order.razorpayOrderId}|${razorpay_payment_id}`;
@@ -156,6 +165,14 @@ const verifyPayment = async (req, res) => {
 
     if (expectedSignature !== razorpay_signature) {
       return res.status(400).json({ success: false, message: 'Invalid payment signature' });
+    }
+
+    if (alreadyPaid) {
+      if (order.razorpayPaymentId !== razorpay_payment_id) {
+        return res.status(409).json({ success: false, message: 'Order has already been paid' });
+      }
+
+      return res.status(200).json({ success: true, order });
     }
 
     // Signature is valid, so the payment is genuine. Confirm the order.
@@ -173,6 +190,56 @@ const verifyPayment = async (req, res) => {
   } catch (err) {
     console.error('Verify payment error:', err);
     return res.status(500).json({ success: false, message: 'Failed to verify payment' });
+  }
+};
+
+// @desc    Get payment details to resume an existing pending order
+// @route   GET /orders/:id/payment-session
+// @access  Private
+const getPaymentSession = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid order ID' });
+    }
+
+    const order = await Order.findOne({ _id: id, user: req.user._id });
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+
+    if (order.paymentStatus !== 'PENDING' || order.status !== 'PENDING_PAYMENT') {
+      return res.status(409).json({ success: false, message: 'Order is not awaiting payment' });
+    }
+
+    if (!order.razorpayOrderId) {
+      return res.status(409).json({
+        success: false,
+        message: 'This order does not have a payment session available to resume',
+      });
+    }
+
+    if (!process.env.RAZORPAY_KEY_ID || !razorpay) {
+      return res.status(500).json({
+        success: false,
+        message: 'Razorpay is not configured on the server',
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      shopKartOrderId: order._id,
+      razorpayOrderId: order.razorpayOrderId,
+      amount: Math.round(order.totalAmount * 100),
+      currency: 'INR',
+      key: process.env.RAZORPAY_KEY_ID,
+      shippingAddress: order.shippingAddress,
+    });
+  } catch (err) {
+    console.error('Get payment session error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to resume payment' });
   }
 };
 
@@ -254,6 +321,7 @@ const updateOrderStatus = async (req, res) => {
 module.exports = {
   createPaymentOrder,
   verifyPayment,
+  getPaymentSession,
   getOrders,
   getOrderById,
   updateOrderStatus,

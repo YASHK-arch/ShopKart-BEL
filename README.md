@@ -328,6 +328,7 @@ This lab completed the purchase journey and added the final checkout flow.
 - Order confirmation flow
 - Order history page
 - Protected order details routes
+- Resume payment for pending orders using the existing Razorpay order
 - Cart cleared only after successful payment verification
 
 #### Order schema
@@ -348,6 +349,7 @@ This lab completed the purchase journey and added the final checkout flow.
 | POST | /orders/verify-payment | Verify signature and confirm the order |
 | GET | /orders | Get current customer's orders |
 | GET | /orders/:id | Fetch single order by ID |
+| GET | /orders/:id/payment-session | Get the existing payment session for an owned pending order |
 | PATCH | /orders/:id/status | Update order fulfilment status |
 
 #### Payment flow
@@ -360,6 +362,19 @@ This lab completed the purchase journey and added the final checkout flow.
 7. Order is marked as `PAID`
 8. Cart is cleared
 9. User is redirected to success / confirmation page
+
+If checkout is closed or payment fails, the order remains `PENDING_PAYMENT`. The customer can continue from My Orders or the order details page. Resuming uses the saved order amount and existing Razorpay order ID; it does not create another ShopKart order. A payment is only marked successful after server-side signature verification.
+
+#### Razorpay test payment details
+
+Use these details only with Razorpay **test mode** credentials (`RAZORPAY_KEY_ID` should start with `rzp_test_`). These are simulated payments; no real money is charged.
+
+- **Card number:** `4100 2800 0000 1007`
+- **Expiry:** any future date
+- **CVV:** any random 3-digit value
+- **OTP, if prompted:** enter any random 4–10 digit number to simulate a successful payment
+
+Do not enter real card details or use live Razorpay keys when testing.
 
 ---
 

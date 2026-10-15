@@ -5,6 +5,7 @@ import CheckoutForm from '../components/CheckoutForm';
 import OrderSummary from '../components/OrderSummary';
 import { useCart } from '../context/CartContext';
 import { getCustomerProfile, createPaymentOrder, verifyPayment } from '../services/api';
+import { loadRazorpayScript } from '../utils/razorpay';
 
 const EMPTY_ADDRESS = {
   fullName: '',
@@ -39,21 +40,6 @@ const validateAddress = (values) => {
 
   return errors;
 };
-
-// Razorpay Standard Checkout is loaded on demand instead of assuming window.Razorpay exists.
-const loadRazorpayScript = () =>
-  new Promise((resolve) => {
-    if (window.Razorpay) {
-      resolve(true);
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-    document.body.appendChild(script);
-  });
 
 const Checkout = () => {
   const navigate = useNavigate();

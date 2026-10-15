@@ -3,6 +3,7 @@ const router = express.Router();
 const {
   createPaymentOrder,
   verifyPayment,
+  getPaymentSession,
   getOrders,
   getOrderById,
   updateOrderStatus,
@@ -13,6 +14,7 @@ const { protect } = require('../middlewares/auth.middleware');
 router.post('/create-payment-order', protect, createPaymentOrder);
 router.post('/verify-payment', protect, verifyPayment);
 router.get('/', protect, getOrders);
+router.get('/:id/payment-session', protect, getPaymentSession);
 router.get('/:id', protect, getOrderById);
 router.patch('/:id/status', protect, updateOrderStatus);
 

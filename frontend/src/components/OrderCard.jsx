@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { formatOrderDate, statusStyles } from '../utils/orderFormat';
+import ContinuePaymentButton from './ContinuePaymentButton';
 
 const formatPrice = (price) =>
   new Intl.NumberFormat('en-IN', {
@@ -41,12 +42,17 @@ const OrderCard = ({ order }) => (
 
     <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center">
       <p className="text-lg font-bold text-gray-900">Total: {formatPrice(order.totalAmount)}</p>
-      <Link
-        to={`/orders/${order._id}`}
-        className="text-sm font-medium text-primary hover:text-blue-500"
-      >
-        View Details
-      </Link>
+      <div className="flex flex-col items-end gap-3">
+        {order.status === 'PENDING_PAYMENT' && order.paymentStatus === 'PENDING' && (
+          <ContinuePaymentButton order={order} />
+        )}
+        <Link
+          to={`/orders/${order._id}`}
+          className="text-sm font-medium text-primary hover:text-blue-500"
+        >
+          View Details
+        </Link>
+      </div>
     </div>
   </article>
 );

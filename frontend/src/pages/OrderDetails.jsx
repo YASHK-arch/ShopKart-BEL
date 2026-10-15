@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import ContinuePaymentButton from '../components/ContinuePaymentButton';
 import { formatOrderDate, statusStyles } from '../utils/orderFormat';
 import { getOrderById } from '../services/api';
 
@@ -126,6 +127,11 @@ const OrderDetails = () => {
                     <span className="text-gray-500">Payment Status:</span>
                     <span className="font-medium text-gray-900">{order.paymentStatus}</span>
                   </div>
+                  {order.status === 'PENDING_PAYMENT' && order.paymentStatus === 'PENDING' && (
+                    <div className="pt-2">
+                      <ContinuePaymentButton order={order} />
+                    </div>
+                  )}
                   {order.razorpayPaymentId && (
                     <div className="flex justify-between gap-4">
                       <span className="text-gray-500">Payment ID:</span>

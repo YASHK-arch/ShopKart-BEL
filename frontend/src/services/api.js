@@ -99,6 +99,11 @@ export const getOrderById = async (id) => {
   return response.data;
 };
 
+export const getPaymentSession = async (id) => {
+  const response = await api.get(`/orders/${id}/payment-session`);
+  return response.data;
+};
+
 export const updateOrderStatus = async (id, status) => {
   const response = await api.patch(`/orders/${id}/status`, { status });
   return response.data;
