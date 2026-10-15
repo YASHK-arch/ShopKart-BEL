@@ -1,272 +1,545 @@
-# ShopKart — Checkout and Orders
+﻿# ShopKart — Full Stack E-Commerce Project (Labs 01 to 06)
 
-> College end-term project module for modelling and implementing a reliable e-commerce checkout and order-management workflow.
+This repository contains the complete implementation of the ShopKart full-stack project across six engineering labs. The project progresses from a backend authentication service to a complete product catalog, wishlist, cart, checkout, payment verification, and order tracking experience.
 
-## Abstract
+The README below consolidates the work implemented in Lab 01 through Lab 06 and documents the architecture, user flows, API contracts, and project setup.
 
-ShopKart — Checkout and Orders models the part of an e-commerce system that transforms a customer's cart into a confirmed order. It captures delivery details, validates the request, records payment status, persists the order, and supports later order tracking.
+---
 
-The project demonstrates full-stack system design, input validation, data modelling, transactional workflows, and secure configuration management. Its design separates user-facing screens, business rules, persistence, and external integrations so that each part can be tested independently.
+## 1. Project Overview
 
-## Objectives
+ShopKart is a full-stack e-commerce application built with Node.js, Express.js, MongoDB, and React. The system allows customers to:
 
-- Implement a structured checkout flow from cart review to order confirmation.
-- Validate items, stock, addresses, order totals, and payment input.
-- Maintain clear order lifecycle states and auditable data.
-- Apply server-side validation and transaction boundaries to avoid inconsistent orders.
-- Follow safe source-control practices for credentials and generated files.
+- register and log in securely
+- browse and search product catalogues
+- save products to a wishlist
+- manage a shopping cart
+- complete a checkout flow with Razorpay test payment
+- view and track past orders
 
-## System Architecture
+The project follows an MVC-style backend and a component-based React frontend. Authentication is handled using JWT stored in an HttpOnly cookie, and protected routes are enforced on the server.
 
-The system uses a layered architecture: the interface calls application endpoints; endpoints delegate decisions to services; services use repositories for persistence and adapters for outside systems.
+### High-Level Architecture
 
 ```mermaid
-flowchart TB
-    U[Customer / Admin] --> UI[Web or Mobile Interface]
-    UI --> API[Checkout and Orders API]
-    subgraph APP[Application Layer]
-        API --> CV[Checkout Validation]
-        API --> OS[Order Service]
-        API --> PS[Payment Service]
-        OS --> IS[Cart / Inventory Validation]
-        OS --> NS[Notification Service]
-    end
-    subgraph DATA[Data Layer]
-        OS --> OR[Order Repository]
-        OS --> AR[Address Repository]
-        PS --> PR[Payment Repository]
-        OR --> DB[(Database)]
-        AR --> DB
-        PR --> DB
-    end
-    PS --> PG[Payment Gateway]
-    NS --> CH[Email / SMS Provider]
+flowchart LR
+    U[Customer] --> UI[React Frontend\nVite + React Router]
+    UI --> API[Express Backend\nREST APIs]
+    API --> AUTH[JWT Auth + Cookie Middleware]
+    API --> DB[(MongoDB)]
+    API --> RZ[Razorpay Test Gateway]
+    UI --> P[Protected Pages\nLogin / Products / Cart / Checkout]
 ```
 
-| Layer | Responsibility |
-| --- | --- |
-| Presentation | Collects input and displays cart, checkout, payment, and order-status screens. |
-| API / Controller | Accepts requests, checks request shape/authentication, and returns responses. |
-| Service | Applies checkout rules, calculates totals, changes order state, and coordinates transactions. |
-| Repository | Reads and writes domain data without embedding business rules in data queries. |
-| External adapter | Isolates payment, inventory, and notification providers from core logic. |
-
-## Intended Repository Structure
+### Backend Architecture
 
 ```mermaid
 flowchart TD
-    R[Repository Root] --> S[Source Code]
-    R --> T[Tests]
-    R --> C[Configuration]
-    R --> D[Documentation]
-    S --> P[Presentation / Routes]
-    S --> B[Business Services]
-    S --> M[Domain Models]
-    S --> DA[Repositories / Data Access]
-    S --> I[Integration Adapters]
-    T --> UT[Unit Tests]
-    T --> IT[Integration Tests]
+    API[Express Server] --> CUST[Customer Routes]
+    API --> PROD[Product Routes]
+    API --> WISH[Wishlist Routes]
+    API --> CART[Cart Routes]
+    API --> ORD[Order Routes]
+
+    CUST --> CCTRL[Customer Controller]
+    PROD --> PCTRL[Product Controller]
+    WISH --> WCTRL[Wishlist Controller]
+    CART --> CARTCTRL[Cart Controller]
+    ORD --> OCTRL[Order Controller]
+
+    CCTRL --> CMODEL[Customer Model]
+    PCTRL --> PMODEL[Product Model]
+    WCTRL --> CMODEL
+    CARTCTRL --> CMODEL
+    OCTRL --> OMODEL[Order Model]
+
+    CMODEL --> DB[(MongoDB)]
+    PMODEL --> DB
+    OMODEL --> DB
+
+    OCTRL --> RZ[Payment Adapter\nRazorpay]
+    CCTRL --> JWT[JWT Generator / Verifier]
 ```
 
-```text
-.
-├── src/
-│   ├── controllers/      # Request handlers / API routes
-│   ├── services/         # Checkout and order business rules
-│   ├── models/           # Domain entities and DTOs
-│   ├── repositories/     # Database access
-│   └── integrations/     # Payment and notification adapters
-├── tests/                # Unit and integration tests
-├── docs/                 # Report material and design notes
-├── .env.example          # Non-secret configuration template (optional)
-└── README.md
-```
-
-## Checkout Workflow
+### Customer Purchase Journey
 
 ```mermaid
 sequenceDiagram
-    actor Customer
-    participant UI as User Interface
-    participant API as Checkout API
-    participant Order as Order Service
-    participant Inventory as Inventory/Cart Service
-    participant Payment as Payment Service
-    participant DB as Database
+    actor User
+    participant FE as React Frontend
+    participant BE as Express API
+    participant DB as MongoDB
+    participant RP as Razorpay
 
-    Customer->>UI: Review cart and submit checkout
-    UI->>API: Cart, address, delivery and payment details
-    API->>Order: Validate checkout request
-    Order->>Inventory: Confirm items, stock and prices
-    Inventory-->>Order: Validation result
-    alt Validation passes
-        Order->>Payment: Authorise payment
-        Payment-->>Order: Payment result
-        alt Payment approved
-            Order->>DB: Create order and order items
-            DB-->>Order: Order ID
-            Order-->>API: Confirmed order
-            API-->>UI: Confirmation and tracking details
-        else Payment declined
-            Order-->>API: Payment failure response
-            API-->>UI: Ask customer to retry payment
-        end
-    else Validation fails
-        Order-->>API: Validation error
-        API-->>UI: Display correction guidance
-    end
+    User->>FE: Browse products
+    FE->>BE: GET /products
+    BE->>DB: Fetch catalog
+    DB-->>BE: Product data
+    BE-->>FE: Product list
+
+    User->>FE: Add to cart / wishlist
+    FE->>BE: POST /cart/:productId or /wishlist/:productId
+    BE->>DB: Update user cart/wishlist
+    DB-->>BE: Save result
+    BE-->>FE: Success status
+
+    User->>FE: Checkout
+    FE->>BE: POST /orders/create-payment-order
+    BE->>DB: Validate cart + create pending order
+    BE->>RP: Create Razorpay order
+    RP-->>BE: Razorpay order id
+    BE-->>FE: Payment details
+    FE->>RP: Open checkout modal
+    RP-->>FE: Payment result
+    FE->>BE: POST /orders/verify-payment
+    BE->>RP: Verify signature
+    BE->>DB: Mark order as paid and clear cart
+    BE-->>FE: Order confirmation
 ```
 
-## Order Lifecycle
+---
 
-```mermaid
-stateDiagram-v2
-    [*] --> Draft: Cart checkout begins
-    Draft --> PendingPayment: Checkout validated
-    PendingPayment --> Confirmed: Payment authorised
-    PendingPayment --> PaymentFailed: Payment declined
-    PaymentFailed --> PendingPayment: Customer retries
-    Confirmed --> Processing: Order accepted
-    Processing --> Shipped: Dispatched
-    Shipped --> Delivered: Received
-    Draft --> Cancelled: Customer exits
-    PendingPayment --> Cancelled: Checkout cancelled
-    Delivered --> [*]
-    Cancelled --> [*]
-```
+## 2. Tech Stack
 
-## Core Data Model
+### Backend
+- Node.js
+- Express.js
+- MongoDB + Mongoose
+- bcrypt
+- jsonwebtoken
+- cookie-parser
+- Razorpay SDK
 
-```mermaid
-erDiagram
-    CUSTOMER ||--o{ ORDER : places
-    CUSTOMER ||--o{ ADDRESS : owns
-    ORDER ||--|{ ORDER_ITEM : contains
-    ORDER ||--o| PAYMENT : has
-    PRODUCT ||--o{ ORDER_ITEM : appears_in
-    ADDRESS ||--o{ ORDER : used_for_delivery
-```
+### Frontend
+- React
+- Vite
+- React Router DOM
+- Axios
+- CSS
 
-## API Design (Conceptual)
+### Tools
+- Postman / API testing
+- MongoDB Atlas / local MongoDB
+- VS Code / Git
 
-| Method | Endpoint | Purpose |
+---
+
+## 3. Application Flow by Lab
+
+### Lab 01 — Customer Authentication Service
+
+This lab focused on the backend authentication core of the application.
+
+#### Features implemented
+- Customer registration API
+- Customer login API
+- JWT generation
+- HttpOnly cookie-based authentication
+- Protected profile endpoint
+- Secure logout
+- Password hashing with bcrypt
+
+#### Customer schema
+- fullName
+- email
+- password
+- phone
+- createdAt
+- wishlist
+- cart
+
+#### API endpoints
+| Method | Endpoint | Description |
 | --- | --- | --- |
-| `POST` | `/checkout/validate` | Validates cart, address, totals, and checkout eligibility. |
-| `POST` | `/orders` | Creates an order after successful checkout/payment processing. |
-| `GET` | `/orders/{orderId}` | Retrieves an order and its current status. |
-| `GET` | `/orders` | Retrieves the authenticated customer's order history. |
-| `POST` | `/payments/confirm` | Records the payment-processing result. |
-| `PATCH` | `/orders/{orderId}/status` | Changes order status for authorised workflows. |
+| POST | /customers/register | Create a new customer account |
+| POST | /customers/login | Authenticate user and set the JWT cookie |
+| GET | /customers/me | Get the authenticated customer's profile |
+| POST | /customers/logout | Clear the auth cookie |
+| PATCH | /customers/change-password | Change password for authenticated user |
 
-Example checkout request:
+#### Key backend notes
+- Passwords are never stored in plaintext.
+- Email uniqueness is enforced.
+- JWT is validated via the `protect` middleware.
+- `req.user` is attached to authenticated requests.
 
-```json
-{
-  "cartId": "cart_123",
-  "deliveryAddressId": "addr_456",
-  "paymentMethod": "sandbox_card"
-}
-```
+---
 
-## Validation, Reliability, and Security
+### Lab 02 — Frontend Login → Home Flow
 
-- Validate all fields on the server even when client-side validation exists.
-- Recalculate prices from trusted product data; never trust a total sent by the client.
-- Check availability before authorising payment or creating an order.
-- Use a transaction for related writes such as orders, order items, and payment state.
-- Make payment confirmation idempotent to prevent duplicate orders on retries.
-- Return non-sensitive error messages and log useful diagnostic context.
+This lab added the user-facing authentication flow on the frontend.
 
-## Testing Strategy
+#### Pages created
+- Register page
+- Login page
+- Home page
+- Navbar
 
-| Test type | Example scope |
+#### Features implemented
+- Controlled form inputs
+- Validation on login/register
+- Redirect after successful login/register
+- Protected access to post-login pages
+- Logout button in navbar
+- Cookies sent automatically with Axios requests
+
+#### Frontend routes
+| Route | Purpose |
 | --- | --- |
-| Unit | Total calculation, status transitions, validation and discount rules. |
-| Integration | Repository queries, transaction handling, payment-adapter responses. |
-| API | Checkout success/failure, authorisation and malformed-input handling. |
-| Manual | Checkout UI, responsive layout, sandbox payment, and error messages. |
+| /register | Customer registration page |
+| /login | Customer login page |
+| /home | Authenticated landing page |
 
-## Future Enhancements
+#### Implementation approach
+- Axios is configured with `withCredentials: true`
+- `react-router-dom` handles front-end navigation
+- API logic is separated into `frontend/src/services/api.js`
 
-- Coupon and promotion support.
-- Shipment tracking, refunds, and returns.
-- Inventory reservation to reduce overselling.
-- Role-based admin dashboard and analytics.
-- Event-driven notifications and order-status updates.
+---
 
-## Before you begin
+### Lab 03 — Product Catalog & Discovery
 
-Inspect the package/build manifest in the repository root first (for example, `package.json`, `pom.xml`, `build.gradle`, or `requirements.txt`). Install the matching runtime and package manager before installing dependencies.
+This lab introduced the product catalogue and browsing experience.
 
-## Setup
+#### Features implemented
+- Product model with validations
+- Product creation API
+- Product listing API
+- Product details API
+- Search by product name
+- Category-based filtering
+- Sorting support
+- Loading and empty states on the front-end
 
-1. Clone the repository:
+#### Product schema
+- name
+- description
+- price
+- category
+- image
+- stock
+- createdAt
 
-   ```bash
-   git clone <repository-url>
-   cd "ShopKart-BEL - Checkout and orders"
-   ```
+#### Product API endpoints
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| POST | /products | Create a product |
+| GET | /products | Fetch all products with optional query filters |
+| GET | /products/:id | Fetch single product by ID |
 
-2. Install dependencies using the package manager declared by the project. Typical examples:
+#### Supported query filters
+- `?search=keyboard`
+- `?category=Electronics`
+- `?search=keyboard&category=Electronics`
+- `?sort=price_asc`
+- `?sort=price_desc`
 
-   ```bash
-   npm ci              # Node.js projects with package-lock.json
-   pnpm install --frozen-lockfile
-   yarn install --immutable
-   ```
+#### Frontend pages
+- `Products.jsx`
+- `ProductDetails.jsx`
+- `SearchBar.jsx`
+- `ProductCard.jsx`
 
-   Use only the command that matches the committed manifest/lockfile; do not create a new lockfile just to start the project.
+---
 
-3. Create your local environment file from the committed example, if one is provided:
+### Lab 04 — Wishlist System
 
-   ```bash
-   # macOS / Linux
-   cp .env.example .env
+This lab created a persistent wishlist tied to the authenticated customer.
 
-   # PowerShell
-   Copy-Item .env.example .env
-   ```
+#### Core idea
+A wishlist stores product references in the customer document instead of duplicating product data.
 
-4. Populate `.env` only with values for your local environment. Never commit this file.
+#### Wishlist features
+- Add product to wishlist
+- Prevent duplicate wishlist entries
+- View all saved products
+- Remove a product from wishlist
+- Protected wishlist routes
+- Populate product data in the response
 
-5. Start the application using the repository’s development command.
+#### Wishlist API endpoints
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| POST | /wishlist/:productId | Add product to wishlist |
+| GET | /wishlist | Get current user wishlist |
+| DELETE | /wishlist/:productId | Remove product from wishlist |
 
-## Environment and secret safety
+#### Wishlist data model
+```js
+wishlist: [
+  { type: mongoose.Schema.Types.ObjectId, ref: 'Product' }
+]
+```
 
-Do not commit API keys, credentials, tokens, private certificates, or local `.env` files. The repository’s `.gitignore` should exclude `.env` and its local variants while allowing an intentionally non-sensitive `.env.example` template.
+---
 
-Before committing or pushing, run:
+### Lab 05 — Shopping Cart
 
+This lab added the cart system and connected it to user data and product stock.
+
+#### Features implemented
+- Cart stored per user
+- Product quantity tracking
+- Duplicate product line handling
+- Add product to cart
+- Increase/decrease quantity
+- Remove product from cart
+- Recalculate subtotal and cart item count
+- Stock validation before updates
+- Persistent cart loading from the backend
+
+#### Cart data model
+```js
+cart: [
+  {
+    product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+    quantity: { type: Number, default: 1, min: 1 }
+  }
+]
+```
+
+#### Cart API endpoints
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| POST | /cart/:productId | Add a product to the cart |
+| GET | /cart | Get the authenticated user's cart |
+| PATCH | /cart/:productId | Update quantity |
+| DELETE | /cart/:productId | Remove product from the cart |
+
+#### Frontend behavior implemented
+- cart is managed with global context
+- cart badge/quantity count is displayed in the navbar
+- cart page shows product details, quantity controls, and summary
+- checkout entry is prepared from the cart state
+
+---
+
+### Lab 06 — Checkout and Orders
+
+This lab completed the purchase journey and added the final checkout flow.
+
+#### Features implemented
+- Shipping address form
+- Final cart review before checkout
+- Server-side validation of cart and address details
+- Order creation with stored product snapshots
+- Razorpay test payment integration
+- Payment signature verification
+- Order confirmation flow
+- Order history page
+- Protected order details routes
+- Cart cleared only after successful payment verification
+
+#### Order schema
+- user
+- items[]
+- shippingAddress
+- totalAmount
+- paymentStatus
+- status
+- razorpayOrderId
+- razorpayPaymentId
+- timestamps
+
+#### Order API endpoints
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| POST | /orders/create-payment-order | Validate cart, create pending ShopKart order, and create Razorpay order |
+| POST | /orders/verify-payment | Verify signature and confirm the order |
+| GET | /orders | Get current customer's orders |
+| GET | /orders/:id | Fetch single order by ID |
+| PATCH | /orders/:id/status | Update order fulfilment status |
+
+#### Payment flow
+1. Customer reviews cart and enters shipping details
+2. Server validates cart and address
+3. ShopKart order is created in `PENDING_PAYMENT`
+4. Razorpay order is created on the backend
+5. Frontend opens Razorpay Checkout
+6. Signature is verified on the server
+7. Order is marked as `PAID`
+8. Cart is cleared
+9. User is redirected to success / confirmation page
+
+---
+
+## 4. Frontend Pages and Screens
+
+The frontend contains the pages and components required for the full customer journey:
+
+- `Login.jsx`
+- `Register.jsx`
+- `Home.jsx`
+- `Products.jsx`
+- `ProductDetails.jsx`
+- `Wishlist.jsx`
+- `Cart.jsx`
+- `Checkout.jsx`
+- `OrderSuccess.jsx`
+- `Orders.jsx`
+- `OrderDetails.jsx`
+
+Additional reusable UI components:
+- `Navbar.jsx`
+- `ProductCard.jsx`
+- `SearchBar.jsx`
+- `OrderCard.jsx`
+- `OrderSummary.jsx`
+- `CheckoutForm.jsx`
+
+Global state:
+- `CartContext.jsx`
+
+---
+
+## 5. Backend Architecture
+
+```text
+backend/
+├── config/
+│   └── razorpay.js
+├── controllers/
+│   ├── cart.controller.js
+│   ├── customer.controller.js
+│   ├── order.controller.js
+│   ├── product.controller.js
+│   └── wishlist.controller.js
+├── middlewares/
+│   └── auth.middleware.js
+├── models/
+│   ├── customer.model.js
+│   ├── order.model.js
+│   └── product.model.js
+├── routes/
+│   ├── cart.routes.js
+│   ├── customer.routes.js
+│   ├── order.routes.js
+│   ├── product.routes.js
+│   └── wishlist.routes.js
+├── seed/
+│   └── products.seed.js
+├── utils/
+│   └── generateToken.js
+├── index.js
+├── package.json
+└── .env
+```
+
+### Middleware and security
+- JWT is read from the `token` cookie
+- `protect` middleware verifies the token and attaches `req.user`
+- protected endpoints guard user-specific data
+- server-side validation checks business rules even when client validation exists
+
+---
+
+## 6. Frontend Structure
+
+```text
+frontend/
+├── public/
+├── src/
+│   ├── assets/
+│   ├── components/
+│   ├── context/
+│   ├── pages/
+│   ├── services/
+│   ├── utils/
+│   ├── App.jsx
+│   ├── index.css
+│   └── main.jsx
+├── index.html
+├── package.json
+├── vite.config.js
+└── README.md
+```
+
+---
+
+## 7. API Summary
+
+| Module | Endpoint(s) | Auth |
+| --- | --- | --- |
+| Customers | /customers/register, /customers/login, /customers/me, /customers/logout | Yes for protected routes |
+| Products | /products, /products/:id | No |
+| Wishlist | /wishlist, /wishlist/:productId | Yes |
+| Cart | /cart, /cart/:productId | Yes |
+| Orders | /orders, /orders/:id, /orders/create-payment-order, /orders/verify-payment | Yes |
+
+---
+
+## 8. Environment Setup
+
+### Backend `.env` example
+```env
+PORT=3000
+MONGO_URI=mongodb://localhost:27017/shopkart
+JWT_SECRET=your_jwt_secret
+NODE_ENV=development
+RAZORPAY_KEY_ID=your_test_key_id
+RAZORPAY_KEY_SECRET=your_test_key_secret
+```
+
+### Install dependencies
 ```bash
-git status
-git diff --cached
+cd backend
+npm install
+
+cd ../frontend
+npm install
 ```
 
-In PowerShell, check for accidentally tracked environment files and private-key material with:
-
-```powershell
-git ls-files | Select-String -Pattern '(^|/)(\.env($|\.)|.*\.(pem|key|p12|pfx)$)'
-```
-
-If a secret was accidentally staged, remove it from the index without deleting your local copy:
-
+### Run the app
 ```bash
-git restore --staged <file>
+# Backend
+cd backend
+npm run dev
+
+# Frontend
+cd frontend
+npm run dev
 ```
 
-If it was already committed or pushed, rotate the credential immediately, remove it from Git history, and notify anyone with access to the repository.
+The backend runs on `http://localhost:3000` and the frontend runs on `http://localhost:5173` by default.
 
-## Useful commands
+---
 
-Use the package scripts or build files committed in this repository for the following actions:
+## 9. Project Outcome
 
-- Development server
-- Production build
-- Test suite
-- Linting / formatting
+By the end of Labs 01–06, the project implements a functioning e-commerce journey:
 
-For a Node.js service, these are commonly exposed as `npm run dev`, `npm test`, `npm run lint`, and `npm run build`; use the actual scripts declared in `package.json`. Keep this README updated when the setup flow changes.
+- user registration and secure login
+- authenticated profile access
+- product discovery and filtering
+- wishlist persistence
+- cart management with stock validation
+- checkout and shipping form
+- Razorpay-based payment flow
+- order creation and order history
 
-## Contributing
+This makes ShopKart a complete full-stack mini e-commerce application that demonstrates backend design, secure authentication, data modelling, state management, and payment integration.
 
-Keep changes focused, run the relevant checks before opening a pull request, and never include secrets in source code, logs, screenshots, test fixtures, or documentation.
+---
+
+## 10. Repository Notes
+
+The project is built as a learning-focused full-stack assignment and is organized to reflect a production-inspired structure:
+
+- backend handles business logic, persistence, auth, and rules
+- frontend renders the customer interface and user journeys
+- MongoDB stores customers, products, cart entries, wishlist references, and orders
+- Razorpay is used only in test mode for safe learning and payment simulation
+
+---
+
+## 11. Completion Status
+
+Implemented across labs:
+- [x] Lab 01 — Authentication Service
+- [x] Lab 02 — Login / Register / Home Flow
+- [x] Lab 03 — Product Catalog
+- [x] Lab 04 — Wishlist System
+- [x] Lab 05 — Shopping Cart
+- [x] Lab 06 — Checkout and Orders
+
+This repository is ready to serve as a consolidated ShopKart project documentation and implementation reference.

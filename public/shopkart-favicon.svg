@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">ShopKart</title>
+  <desc id="desc">Blue shopping cart with a yellow lightning accent</desc>
+  <defs>
+    <linearGradient id="cart-blue" x1="10" y1="10" x2="54" y2="54" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2563EB"/>
+      <stop offset="1" stop-color="#0F3D99"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="#F8FAFC"/>
+  <path d="M12 14h7l3.1 25.2a5 5 0 0 0 5 4.4h20.6" fill="none" stroke="url(#cart-blue)" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+  <path d="M23 23h29l-3.6 13.4a5 5 0 0 1-4.8 3.7H25.2" fill="none" stroke="url(#cart-blue)" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+  <circle cx="28" cy="50" r="4.5" fill="#0F3D99"/>
+  <circle cx="46" cy="50" r="4.5" fill="#0F3D99"/>
+  <path d="m41 15-6.8 11h6l-3.3 9 9.2-13h-6.2L41 15Z" fill="#FBBF24"/>
+</svg>
